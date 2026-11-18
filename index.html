@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Stretch">
+  <title>Stretch Trainer</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <section id="home" class="screen">
+    <header class="bar">
+      <span>Stretch Trainer</span>
+      <span class="muted">Routinen</span>
+    </header>
+    <ol id="routine-list" class="list"></ol>
+  </section>
+
+  <section id="player" class="screen" hidden>
+    <header class="bar">
+      <button id="btn-exit" class="bar-btn" aria-label="Beenden">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+      </button>
+      <span id="p-routine" class="muted"></span>
+      <span id="p-count" class="num"></span>
+    </header>
+    <div id="segments" class="segments"></div>
+
+    <div class="stage">
+      <div id="p-phase" class="phase"></div>
+      <h1 id="p-name" class="name"></h1>
+      <p id="p-cue" class="cue"></p>
+      <div id="p-picto" class="picto"></div>
+    </div>
+
+    <div class="timer">
+      <div id="p-time" class="time num"></div>
+      <div class="phasebar"><div id="p-phasebar"></div></div>
+    </div>
+
+    <nav class="controls">
+      <button id="btn-prev" aria-label="Zurück">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 4L7 12L15 20" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+      </button>
+      <button id="btn-main" class="primary">Start</button>
+      <button id="btn-next" aria-label="Weiter">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 4L17 12L9 20" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+      </button>
+    </nav>
+  </section>
+
+  <script src="routines.js"></script>
+  <script src="pictograms.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
