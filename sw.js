@@ -1,4 +1,4 @@
-const CACHE = 'stretch-v1';
+const CACHE = 'stretch-v2';
 const ASSETS = [
   './',
   'index.html',

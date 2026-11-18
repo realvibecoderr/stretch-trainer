@@ -5,8 +5,12 @@
   const pad = (n) => String(n).padStart(2, '0');
   const fmt = (s) => Math.floor(s / 60) + ':' + pad(Math.round(s % 60));
 
+  // Einseitige Übungen (sides: true) laufen 2 × sideHold mit Seitenwechsel dazwischen.
+  const holdFor = (r, ex) => (ex.sides ? r.sideHold : r.hold);
   const totalSeconds = (r) =>
-    r.prep + r.exercises.length * r.hold + (r.exercises.length - 1) * r.transition;
+    r.prep +
+    r.exercises.reduce((t, ex) => t + (ex.sides ? 2 * r.sideHold + r.transition : r.hold), 0) +
+    (r.exercises.length - 1) * r.transition;
 
   /* ---------- Ton ---------- */
   const Sound = {
@@ -77,7 +81,8 @@
   const S = {
     r: null,
     i: 0,
-    phase: 'idle',   // idle | prep | hold | transition | done
+    side: 0,
+    phase: 'idle',   // idle | prep | hold | switch | transition | done
     duration: 0,
     endsAt: 0,
     remaining: 0,
@@ -98,7 +103,7 @@
       b.innerHTML =
         `<span class="idx num">${pad(k + 1)}</span>` +
         `<span><span class="title">${r.name}</span>` +
-        `<span class="meta num">${r.exercises.length} Übungen · ${r.hold} s · ${fmt(totalSeconds(r))} min</span></span>` +
+        `<span class="meta num">${r.exercises.length} Übungen · ${fmt(totalSeconds(r))} min</span></span>` +
         `<span class="go">→</span>`;
       b.addEventListener('click', () => openRoutine(r));
       li.appendChild(b);
@@ -137,12 +142,17 @@
     show('home');
   }
 
-  function enter(phase, i) {
+  function enter(phase, i, side = 0) {
     S.phase = phase;
     S.i = i;
+    S.side = side;
     S.paused = false;
     S.lastSec = null;
-    S.duration = phase === 'prep' ? S.r.prep : phase === 'hold' ? S.r.hold : phase === 'transition' ? S.r.transition : 0;
+    const ex = S.r.exercises[i];
+    S.duration =
+      phase === 'prep' ? S.r.prep :
+      phase === 'hold' ? holdFor(S.r, ex) :
+      phase === 'transition' || phase === 'switch' ? S.r.transition : 0;
     S.endsAt = now() + S.duration * 1000;
     render();
     update();
@@ -158,6 +168,13 @@
 
   function finishHold() {
     flash();
+    const ex = S.r.exercises[S.i];
+    if (ex.sides && S.side === 0) {
+      Sound.bell();
+      if (S.r.transition > 0) enter('switch', S.i, 1);
+      else enter('hold', S.i, 1);
+      return;
+    }
     if (S.i >= S.r.exercises.length - 1) {
       Sound.bell(); Sound.bell(0.45); Sound.bell(0.9);
       stopLoop();
@@ -171,9 +188,9 @@
   }
 
   function advance() {
-    if (S.phase === 'prep' || S.phase === 'transition') {
+    if (S.phase === 'prep' || S.phase === 'transition' || S.phase === 'switch') {
       Sound.go();
-      enter('hold', S.i);
+      enter('hold', S.i, S.phase === 'switch' ? 1 : 0);
     } else if (S.phase === 'hold') {
       finishHold();
     }
@@ -188,8 +205,8 @@
     }
     let target = S.i + delta;
     if (S.phase === 'transition' && delta > 0) target = S.i;
-    // zurück: läuft die Übung schon länger als 3 s, erst auf Anfang setzen
-    if (delta < 0 && S.phase === 'hold' && elapsed() > 3) target = S.i;
+    // zurück: läuft die Übung schon länger als 3 s (oder 2. Seite), erst auf Anfang setzen
+    if (delta < 0 && (S.phase === 'switch' || (S.phase === 'hold' && (S.side === 1 || elapsed() > 3)))) target = S.i;
     if (target < 0) target = 0;
     if (target > S.r.exercises.length - 1) {
       stopLoop(); Wake.off(); enter('done', S.r.exercises.length - 1);
@@ -247,16 +264,22 @@
 
     const cls = ['is-' + phase];
     if (S.paused) cls.push('is-paused');
+    if (ex && ex.sides && S.side === 1 && (phase === 'hold' || phase === 'switch')) cls.push('is-side2');
     document.body.className = cls.join(' ');
 
     const labels = {
       idle: 'Bereit',
       prep: 'Gleich geht’s los',
       hold: 'Halten',
+      switch: 'Seite wechseln',
       transition: 'Nächste Übung',
       done: 'Fertig'
     };
-    $('p-phase').textContent = S.paused ? 'Pausiert' : labels[phase];
+    let label = labels[phase];
+    if (ex && ex.sides && (phase === 'hold' || phase === 'switch')) {
+      label = phase === 'switch' ? 'Seite wechseln · 2 / 2' : 'Halten · Seite ' + (S.side + 1) + ' / 2';
+    }
+    $('p-phase').textContent = S.paused ? 'Pausiert' : label;
     $('p-count').textContent = pad(S.i + 1) + ' / ' + pad(n);
 
     if (phase === 'done') {
@@ -287,7 +310,7 @@
     }
 
     if (phase === 'idle') {
-      $('p-time').textContent = String(r.hold);
+      $('p-time').textContent = String(holdFor(r, ex));
       $('p-phasebar').style.width = '0';
     }
   }
@@ -304,13 +327,16 @@
 
     const frac = Math.min(1, Math.max(0, 1 - rem / (S.duration * 1000)));
     $('p-phasebar').style.width = (frac * 100).toFixed(2) + '%';
-    if (phase === 'hold') {
+    if (phase === 'hold' || phase === 'switch') {
       const seg = $('segments').children[S.i];
-      if (seg) seg.firstChild.style.width = (frac * 100).toFixed(2) + '%';
+      const ex = S.r.exercises[S.i];
+      let segFrac = frac;
+      if (ex.sides) segFrac = phase === 'switch' ? 0.5 : (S.side + frac) / 2;
+      if (seg) seg.firstChild.style.width = (segFrac * 100).toFixed(2) + '%';
     }
 
     if (!S.paused && sec !== S.lastSec) {
-      if ((phase === 'prep' || phase === 'transition') && sec <= 3 && sec < S.duration && S.lastSec !== null) {
+      if ((phase === 'prep' || phase === 'transition' || phase === 'switch') && sec <= 3 && sec < S.duration && S.lastSec !== null) {
         Sound.tick();
       }
       S.lastSec = sec;

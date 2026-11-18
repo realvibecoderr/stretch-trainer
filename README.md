@@ -8,6 +8,7 @@ Routine wählen, Start drücken, Piktogramm + Countdown.
 ## Ablauf
 
 - 5 s Vorlauf, dann jede Übung 40 s halten
+- Einseitige Übungen: 30 s pro Seite, dazwischen Glocke + 3 s Seitenwechsel
 - Glocke am Ende jeder Übung, danach 3 s Wechselzeit mit Vorschau der nächsten Übung
 - Pause / Weiter, vor und zurück springen, Bildschirm bleibt an (Wake Lock)
 
@@ -22,4 +23,4 @@ Hinweis iPhone: Im Lautlos-Modus ist die Glocke stumm. Dafür blitzt der Bildsch
 
 In `routines.js` ein weiteres Objekt in `ROUTINES` eintragen (Name, Zeiten, Übungen).
 Jede Übung verweist mit `picto` auf eine Figur in `pictograms.js`.
-Nach Änderungen in `sw.js` die Cache-Version (`stretch-v1`) hochzählen.
+Nach Änderungen in `sw.js` die Cache-Version (`stretch-vN`) hochzählen.

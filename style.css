@@ -141,6 +141,7 @@ button {
   padding: 8px 0;
 }
 .picto svg { width: 100%; height: 100%; max-height: 420px; }
+body.is-side2 .picto svg { transform: scaleX(-1); }
 
 /* Timer */
 .timer { flex: none; padding: 0 16px 16px; }
@@ -154,10 +155,13 @@ button {
 .phasebar div { height: 100%; width: 0; background: var(--fg); }
 
 body.is-transition .time,
+body.is-switch .time,
 body.is-prep .time { color: var(--mid); }
 body.is-transition .phase,
+body.is-switch .phase,
 body.is-prep .phase { color: var(--fg); }
 body.is-transition .phasebar div,
+body.is-switch .phasebar div,
 body.is-prep .phasebar div { background: var(--mid); }
 body.is-paused .time { color: var(--dim); }
 
